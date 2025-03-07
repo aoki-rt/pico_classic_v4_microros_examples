@@ -16,21 +16,29 @@
 // メッセージヘッダーファイルを見つけるため、micro_ros_arduino.hを先にインクルードすること
 #include <micro_ros_arduino.h>
 #include <rcl/error_handling.h>
+#include <rclc/executor.h>
 #include <rcl/rcl.h>
 #include <rclc/rclc.h>
 #include <stdio.h>
-#include <std_msgs/msg/int32.h>
+#include <std_srvs/srv/trigger.h>
 // clang-format off
 
 #define PCC4
 
-std_msgs__msg__Int32 g_msg;
+std_srvs__srv__Trigger_Response g_res;
+std_srvs__srv__Trigger_Request g_req;
+const int capacity = 32;
+char data[capacity] = "success";
 
-rcl_publisher_t g_publisher;
+rclc_executor_t g_executor;
 rclc_support_t g_support;
 rcl_allocator_t g_allocator;
 rcl_node_t g_node;
+rcl_service_t g_service;
 
+#define BUZZER 38
+#define FREQ_C 523  //ド
+#define FREQ_D 587  //レ
 #ifdef PCC4
 #define LED0 13
 #define LED1 14
@@ -60,6 +68,23 @@ void error_loop(){
   }
 }
 
+void service_callback(const void * reqin, void * resin){
+  static bool result = false;
+  std_srvs__srv__Trigger_Request *req1 = (std_srvs__srv__Trigger_Request *)reqin;
+  std_srvs__srv__Trigger_Response *res1=(std_srvs__srv__Trigger_Response *)resin;
+  res1->success = !result;
+  if (result == true) { ledcWriteTone(BUZZER, FREQ_C);
+  } else {              ledcWriteTone(BUZZER, FREQ_D);
+  }
+  delay(1000);
+  ledcWrite(BUZZER, 1024);
+  result = res1->success;
+  res1->message.capacity = capacity;
+  res1->message.size = strlen(data);
+  res1->message.data = data;
+}
+
+
 void setup() {
   pinMode(LED0, OUTPUT);
   pinMode(LED1, OUTPUT);
@@ -70,6 +95,9 @@ void setup() {
   pinMode(SW_C, INPUT_PULLUP);
   pinMode(SW_R, INPUT_PULLUP);
 
+  ledcAttach(BUZZER, 440, 10);
+  ledcWrite(BUZZER, 1024);
+
   digitalWrite(LED1, HIGH);
   set_microros_wifi_transports("使用するWiFiのAP名", "Wi-Fiのパスワード", "PCのIPアドレス", 8888);
   digitalWrite(LED2, HIGH);
@@ -78,22 +106,24 @@ void setup() {
 
   g_allocator = rcl_get_default_allocator();
 
-  //create init_options
+ //create init_options
   RCCHECK(rclc_support_init(&g_support, 0, NULL, &g_allocator));
 
-  // create g_node
-  RCCHECK(rclc_node_init_default(&g_node, "micro_ros_pico_node", "", &g_support));
-
-  // create publisher
-  RCCHECK(rclc_publisher_init_best_effort(
-    &g_publisher,
+ // create node
+  RCCHECK(rclc_node_init_default(&g_node, "micro_ros_arduino_node", "", &g_support));
+ // create service
+  RCCHECK(rclc_service_init_default(
+    &g_service,
     &g_node,
-    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
-    "topic_name"));
-
+    ROSIDL_GET_SRV_TYPE_SUPPORT(std_srvs, srv, Trigger),
+   "micro_ros_arduino_service"));
+// create executor
+  RCCHECK(rclc_executor_init(&g_executor, &g_support.context, 1, &g_allocator));
+  RCCHECK(rclc_executor_add_service(&g_executor, &g_service, &g_req, &g_res, service_callback));
 }
 
-void loop() {
-    RCSOFTCHECK(rcl_publish(&g_publisher, &g_msg, NULL));
-    g_msg.data=digitalRead(SW_L)&digitalRead(SW_C)&digitalRead(SW_R);
+void loop()
+{
+  delay(100);
+  RCSOFTCHECK(rclc_executor_spin_some(&g_executor,RCL_MS_TO_NS(100)));
 }
