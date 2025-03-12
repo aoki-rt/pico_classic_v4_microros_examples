@@ -22,6 +22,7 @@
 #include <std_msgs/msg/int32.h>
 // clang-format off
 
+//Pi:co Classic3で使用する時は、#define PCC4をコメントアウトする
 #define PCC4
 
 std_msgs__msg__Int32 g_msg;
@@ -49,11 +50,11 @@ rcl_node_t g_node;
 #define SW_R 12
 #endif
 
-#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){error_loop();}}
+#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){errorLoop();}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){}}
 
 
-void error_loop(){
+void errorLoop(){
   while(1){
     digitalWrite(LED0, !digitalRead(LED0));
     delay(100);

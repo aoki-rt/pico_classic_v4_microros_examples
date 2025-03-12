@@ -1,4 +1,4 @@
-// Copyright 2023 RT Corporation
+// Copyright 2025 RT Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@
 #include <std_msgs/msg/int16.h>
 // clang-format off
 
+#define PCC4
+
 pico_msgs__msg__LightSensor g_sensor_msg;
 std_msgs__msg__Int16 g_bat_msg;
 
@@ -31,21 +33,35 @@ rclc_support_t g_support;
 rcl_allocator_t g_allocator;
 rcl_node_t g_node;
 
-#define LED0 1
-#define LED1 2
-#define LED2 42
-#define LED3 41
-
-#define SLED_FR 16
-#define SLED_FL 15
-#define SLED_R 18
-#define SLED_L 17
-
+#ifdef PCC4
+#define LED0 13
+#define LED1 14
+#define LED2 47
+#define LED3 48
+#define SLED_FR 9
+#define SLED_FL 10
+#define SLED_R 11
+#define SLED_L 12
 #define AD4 7
 #define AD3 6
 #define AD2 5
 #define AD1 4
 #define AD0 8
+#else
+#define LED0 1
+#define LED1 2
+#define LED2 42
+#define LED3 41
+#define SLED_FR 16
+#define SLED_FL 15
+#define SLED_R 18
+#define SLED_L 17
+#define AD4 7
+#define AD3 6
+#define AD2 5
+#define AD1 4
+#define AD0 8
+#endif
 
 hw_timer_t * g_timer1 = NULL;
 
@@ -57,23 +73,11 @@ volatile short g_sensor_value_r;
 volatile short g_sensor_value_l;
 volatile short g_battery_value;
 
-#define RCCHECK(fn)                \
-  {                                \
-    rcl_ret_t temp_rc = fn;        \
-    if ((temp_rc != RCL_RET_OK)) { \
-      errorLoop();                \
-    }                              \
-  }
-#define RCSOFTCHECK(fn)            \
-  {                                \
-    rcl_ret_t temp_rc = fn;        \
-    if ((temp_rc != RCL_RET_OK)) { \
-    }                              \
-  }
+#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){errorLoop();}}
+#define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){}}
 
-void errorLoop()
-{
-  while (1) {
+void errorLoop(){
+  while(1){
     digitalWrite(LED0, !digitalRead(LED0));
     delay(100);
   }
@@ -122,7 +126,7 @@ void IRAM_ATTR onTimer1(void)
       break;
   }
   cnt++;
-  if (cnt == 4) cnt = 0;
+  if (cnt >= 4) cnt = 0;
   portEXIT_CRITICAL_ISR(&g_timer_mux);
 }
 
@@ -146,11 +150,6 @@ void setup()
   pinMode(LED1, OUTPUT);
   pinMode(LED2, OUTPUT);
   pinMode(LED3, OUTPUT);
-
-  digitalWrite(LED1, HIGH);
-  set_microros_wifi_transports("使用するWiFiのAP名", "Wi-Fiのパスワード", "PCのIPアドレス", 8888);
-  digitalWrite(LED2, HIGH);
-
   //Sensor 発光off
   pinMode(SLED_FR, OUTPUT);
   pinMode(SLED_FL, OUTPUT);
@@ -161,12 +160,16 @@ void setup()
   digitalWrite(SLED_R, LOW);
   digitalWrite(SLED_L, LOW);
 
-  delay(2000);
-
   g_timer1 = timerBegin(1000000);  //1MHz(1us)
   timerAttachInterrupt(g_timer1, &onTimer1);
   timerAlarm(g_timer1, 250, true, 0);  //250 * 1us = 250us(4kHz)
   timerStart(g_timer1);
+
+  digitalWrite(LED1, HIGH);
+  set_microros_wifi_transports("使用するWiFiのAP名", "Wi-Fiのパスワード", "PCのIPアドレス", 8888);
+  digitalWrite(LED2, HIGH);
+
+  delay(2000);
 
   g_allocator = rcl_get_default_allocator();
 
@@ -178,17 +181,19 @@ void setup()
 
   // create g_publisher
   RCCHECK(rclc_publisher_init_default(
-    &g_publisher_sensor, &g_node, ROSIDL_GET_MSG_TYPE_SUPPORT(pico_msgs, msg, LightSensor),
+    &g_publisher_sensor, 
+    &g_node, 
+    ROSIDL_GET_MSG_TYPE_SUPPORT(pico_msgs, msg, LightSensor),
     "pico_sensor"));
 
   RCCHECK(rclc_publisher_init_default(
-    &g_publisher_battery, &g_node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int16), "pico_battery"));
+    &g_publisher_battery, 
+    &g_node, 
+    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int16),
+    "pico_battery"));
 
   xTaskCreateUniversal(
-    //  xTaskCreatePinnedToCore(
     publisherTask, "publisherTask", 4096, NULL, 1, NULL,
-    //    PRO_CPU_NUM
-    //    APP_CPU_NUM
     CONFIG_ARDUINO_RUNNING_CORE);
 }
 

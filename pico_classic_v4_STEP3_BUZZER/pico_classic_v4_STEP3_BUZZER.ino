@@ -23,6 +23,7 @@
 #include <std_srvs/srv/trigger.h>
 // clang-format off
 
+//Pi:co Classic3で使用する時は、#define PCC4をコメントアウトする
 #define PCC4
 
 std_srvs__srv__Trigger_Response g_res;
@@ -57,11 +58,11 @@ rcl_service_t g_service;
 #define SW_R 12
 #endif
 
-#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){error_loop();}}
+#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){errorLoop();}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){}}
 
 
-void error_loop(){
+void errorLoop(){
   while(1){
     digitalWrite(LED0, !digitalRead(LED0));
     delay(100);
