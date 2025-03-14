@@ -1,4 +1,4 @@
-// Copyright 2023 RT Corporation
+// Copyright 2025 RT Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,10 +21,16 @@
 #include <rcl/rcl.h>
 #include <rclc/executor.h>
 #include <rclc/rclc.h>
+#include "run.h"
 #include <sensor_msgs/msg/joint_state.h>
+#include "SPI.h"
 #include <stdio.h>
+#include "TMC5240.h"
 #include <tf2_msgs/msg/tf_message.h>
 // clang-format on
+
+//Pi:co Classic3で使用する時は、#define PCC4をコメントアウトする
+#define PCC4
 
 geometry_msgs__msg__Twist g_msg;
 tf2_msgs__msg__TFMessage * g_tf_message;
@@ -39,22 +45,35 @@ rcl_allocator_t g_allocator;
 rclc_support_t g_support;
 rcl_node_t g_node;
 
+#define MIN_SPEED 30
+#define TIRE_DIAMETER (48.00)
+#define TREAD_WIDTH (65.0)
+
+#ifdef PCC4
+#define LED0 13
+#define LED1 14
+#define LED2 47
+#define LED3 48
+#define MOTOR_EN 17
+#define SPI_CLK 39
+#define SPI_MOSI 42
+#define SPI_MISO 41
+#define SPI_CS_L 40   //左モータ
+#define SPI_CS_R 3   //右モータ
+#define SPI_CS_J 46  //ジャイロ
+#define PULSE TMC5240_PULSE
+#else
 #define LED0 1
 #define LED1 2
 #define LED2 42
 #define LED3 41
-
 #define MOTOR_EN 9
 #define CW_R 14
 #define CW_L 21
 #define PWM_R 13
 #define PWM_L 45
-
-#define MIN_HZ 80
-#define TIRE_DIAMETER (48.00)
 #define PULSE (TIRE_DIAMETER * PI / 400.0)
-#define MIN_SPEED (MIN_HZ * PULSE)
-#define TREAD_WIDTH (65.0)
+#endif
 
 hw_timer_t * g_timer0 = NULL;
 hw_timer_t * g_timer2 = NULL;
@@ -62,15 +81,15 @@ hw_timer_t * g_timer3 = NULL;
 
 portMUX_TYPE g_timer_mux = portMUX_INITIALIZER_UNLOCKED;
 
+/*
 unsigned short g_step_hz_r = MIN_HZ;
 unsigned short g_step_hz_l = MIN_HZ;
-
-volatile unsigned int g_step_r, g_step_l;
 
 volatile double g_max_speed = MIN_SPEED;
 volatile double g_min_speed = MIN_SPEED;
 volatile double g_accel = 0.0;
 volatile double g_speed = 0.0;
+*/
 
 double g_max_omega;
 double g_min_omega;
@@ -82,20 +101,8 @@ double g_odom_x, g_odom_y, g_odom_theta;
 
 volatile bool g_motor_move = 0;
 
-#define RCCHECK(fn)                \
-  {                                \
-    rcl_ret_t temp_rc = fn;        \
-    if ((temp_rc != RCL_RET_OK)) { \
-      errorLoop();                 \
-    }                              \
-  }
-#define RCSOFTCHECK(fn)            \
-  {                                \
-    rcl_ret_t temp_rc = fn;        \
-    if ((temp_rc != RCL_RET_OK)) { \
-      errorLoop();                 \
-    }                              \
-  }
+#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){errorLoop();}}
+#define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){}}
 
 void errorLoop()
 {
@@ -126,23 +133,22 @@ void eulerToQuat(float x, float y, float z, double * q)
 void IRAM_ATTR onTimer0(void)
 {
   portENTER_CRITICAL_ISR(&g_timer_mux);  //割り込み禁止
-  controlInterrupt();
+  g_run.interrupt();
   portEXIT_CRITICAL_ISR(&g_timer_mux);  //割り込み許可
 }
 
+#ifndef PCC4 
 //Rモータの周期数割り込み
 void IRAM_ATTR isrR(void)
 {
   portENTER_CRITICAL_ISR(&g_timer_mux);  //割り込み禁止
-  if (g_motor_move) {
-    if (g_step_hz_r < 30) g_step_hz_r = 30;
-    timerAlarm(g_timer2, 2000000 / g_step_hz_r, true, 0);
+  if (g_run.motor_move) {
+    timerAlarm(g_timer2, 2000000 / g_run.step_hz_r, true, 0);
     digitalWrite(PWM_R, HIGH);
     for (int i = 0; i < 100; i++) {
       asm("nop \n");
     }
     digitalWrite(PWM_R, LOW);
-    g_step_r++;
   }
   portEXIT_CRITICAL_ISR(&g_timer_mux);  //割り込み許可
 }
@@ -151,9 +157,8 @@ void IRAM_ATTR isrR(void)
 void IRAM_ATTR isrL(void)
 {
   portENTER_CRITICAL_ISR(&g_timer_mux);  //割り込み禁止
-  if (g_motor_move) {
-    if (g_step_hz_l < 30) g_step_hz_l = 30;
-    timerAlarm(g_timer3, 2000000 / g_step_hz_l, true, 0);
+  if (g_run.motor_move) {
+    timerAlarm(g_timer3, 2000000 / g_run.step_hz_l, true, 0);
     digitalWrite(PWM_L, HIGH);
     for (int i = 0; i < 100; i++) {
       asm("nop \n");
@@ -163,15 +168,15 @@ void IRAM_ATTR isrL(void)
   }
   portEXIT_CRITICAL_ISR(&g_timer_mux);  //割り込み許可
 }
+#endif
 
 //twist message cb
 void subscriptionCallback(const void * msgin)
 {
   const geometry_msgs__msg__Twist * g_msg = (const geometry_msgs__msg__Twist *)msgin;
-
   //linearは[m/s]の単位で入力されるのでPi:Coのシステムに合わせて[mm/s]にする
-  g_speed = g_msg->linear.x * 1000.0;
-  g_omega = g_msg->angular.z;
+  g_run.speed = g_msg->linear.x * 1000.0;
+  g_run.omega = g_msg->angular.z;
 }
 
 void setup()
@@ -181,23 +186,28 @@ void setup()
   pinMode(LED2, OUTPUT);
   pinMode(LED3, OUTPUT);
 
-  digitalWrite(LED1, HIGH);
-  set_microros_wifi_transports("使用するWiFiのAP名", "Wi-Fiのパスワード", "PCのIPアドレス", 8888);
-
-  digitalWrite(LED2, HIGH);
-
   //motor disable
   pinMode(MOTOR_EN, OUTPUT);
+
+ #ifdef PCC4 
+  digitalWrite(MOTOR_EN, HIGH);
+  g_tmc5240.init();
+#else
+  digitalWrite(MOTOR_EN, LOW);
   pinMode(CW_R, OUTPUT);
   pinMode(CW_L, OUTPUT);
   pinMode(PWM_R, OUTPUT);
   pinMode(PWM_L, OUTPUT);
 
-  digitalWrite(MOTOR_EN, LOW);
   digitalWrite(CW_R, LOW);
   digitalWrite(CW_L, LOW);
   digitalWrite(PWM_R, LOW);
   digitalWrite(PWM_L, LOW);
+#endif
+
+  digitalWrite(LED1, HIGH);
+  set_microros_wifi_transports("使用するWiFiのAP名", "Wi-Fiのパスワード", "PCのIPアドレス", 8888);
+  digitalWrite(LED2, HIGH);
 
   delay(2000);
 
@@ -206,6 +216,7 @@ void setup()
   timerAlarm(g_timer0, 1000, true, 0);  //1000 * 1us =1000us(1kHz)
   timerStart(g_timer0);
 
+#ifndef PCC4 
   g_timer2 = timerBegin(2000000);  //2MHz(0.5us)
   timerAttachInterrupt(g_timer2, &isrR);
   timerAlarm(g_timer2, 13333, true, 0);  //13333 * 0.5us = 6666us(150Hz)
@@ -215,6 +226,7 @@ void setup()
   timerAttachInterrupt(g_timer3, &isrL);
   timerAlarm(g_timer3, 13333, true, 0);  //13333 * 0.5us = 6666us(150Hz)
   timerStart(g_timer3);
+#endif
 
   g_allocator = rcl_get_default_allocator();
 
@@ -269,7 +281,11 @@ void setup()
   g_jstate.position.size = 2;
   g_jstate.position.capacity = 2;
 
+#ifdef PCC4 
+  digitalWrite(MOTOR_EN, LOW);
+#else
   digitalWrite(MOTOR_EN, HIGH);
+#endif
 }
 
 void loop()

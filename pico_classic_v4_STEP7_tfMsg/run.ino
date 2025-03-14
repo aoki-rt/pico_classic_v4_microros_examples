@@ -1,4 +1,4 @@
-// Copyright 2023 RT Corporation
+// Copyright 2025 RT Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,19 +12,76 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-void controlInterrupt(void)
+#include "TMC5240.h"
+#include "run.h"
+
+RUN g_run;
+
+RUN::RUN()
+{
+  speed=0.0;
+  speed_r=0.0;
+  speed_l=0.0;
+  motor_move = 0.0;
+  omega = 0.0;
+}
+
+
+
+void RUN::dirSet(t_CW_CCW dir_left, t_CW_CCW dir_right)
+{
+#ifdef PCC4
+  g_tmc5240.write(TMC5240_RAMPMODE, dir_left, dir_right);
+#else
+  if (dir_left == MOT_FORWARD) {
+    digitalWrite(CW_L, LOW);
+  } else {
+    digitalWrite(CW_L, HIGH);
+  }
+  if (dir_right == MOT_FORWARD) {
+    digitalWrite(CW_R, LOW);
+  } else {
+    digitalWrite(CW_R, HIGH);
+  }
+#endif
+}
+
+void RUN::speedSet(double l_speed, double r_speed) {
+  l_speed = fabs(l_speed);
+  if(l_speed < MIN_SPEED)l_speed=MIN_SPEED;
+  r_speed = fabs(r_speed);
+  if(r_speed < MIN_SPEED)r_speed=MIN_SPEED;
+#ifdef PCC4
+  g_tmc5240.write(TMC5240_VMAX, (unsigned int)(l_speed / (PULSE * 0.787)), (unsigned int)(r_speed / (PULSE * 0.787)));
+#else
+  step_hz_r=(unsigned short)(r_speed/PULSE);
+  step_hz_l=(unsigned short)(l_speed/PULSE);
+#endif
+}
+
+void RUN::stop(void)
+{
+#ifdef PCC4
+  g_tmc5240.write(TMC5240_VMAX, 0, 0);
+#else
+  motor_move = 0;
+#endif
+}
+
+void RUN::interrupt(void)
 {
   // 直進速度と回転速度から、左右のモータ速度を求める
-  double speed_r = g_speed + g_omega * TREAD_WIDTH / 2.0;
-  double speed_l = g_speed - g_omega * TREAD_WIDTH / 2.0;
+  speed_r = speed + omega * TREAD_WIDTH / 2.0;
+  speed_l = speed - omega * TREAD_WIDTH / 2.0;
 
   // 左右両方のモータ速度がMIN_SPEED以下の場合は走行を停止する
   if (fabs(speed_r) < MIN_SPEED && fabs(speed_l) < MIN_SPEED) {
-    g_motor_move = 0;
+    stop();
     return;
   }
 
-  g_motor_move = 1;
+  motor_move = 1;
+
   // モータ速度をMIN_SPEED以上に制限する
   if (fabs(speed_r) < MIN_SPEED) {
     speed_r = (speed_r > 0.0) ? MIN_SPEED : -1.0 * MIN_SPEED;
@@ -44,17 +101,16 @@ void controlInterrupt(void)
   g_position_r += speed_r * UPDATE_INTERVAL / (TIRE_DIAMETER * PI) * 2 * PI;
   g_position_l -= speed_l * UPDATE_INTERVAL / (TIRE_DIAMETER * PI) * 2 * PI;
 
-  if (speed_r > 0) {
-    digitalWrite(CW_R, LOW);
+  if ((speed_r > 0) && (speed_l > 0)) {
+    dirSet(MOT_FORWARD, MOT_FORWARD);
+  } else if ((speed_r < 0) && (speed_l > 0)) {
+    dirSet(MOT_FORWARD, MOT_BACK);
+  } else if ((speed_r > 0) && (speed_l < 0)) {
+    dirSet(MOT_BACK, MOT_FORWARD);
+  } else if ((speed_r < 0) && (speed_l < 0)) {
+    dirSet(MOT_BACK, MOT_BACK);
   } else {
-    digitalWrite(CW_R, HIGH);
+    stop();
   }
-  g_step_hz_r = abs((signed short)(speed_r / PULSE));
-
-  if (speed_l > 0) {
-    digitalWrite(CW_L, LOW);
-  } else {
-    digitalWrite(CW_L, HIGH);
-  }
-  g_step_hz_l = abs((signed short)(speed_l / PULSE));
+  speedSet(speed_l, speed_r);
 }

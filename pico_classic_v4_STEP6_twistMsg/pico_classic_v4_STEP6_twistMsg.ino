@@ -27,7 +27,7 @@
 // clang-format on
 
 //Pi:co Classic3で使用する時は、#define PCC4をコメントアウトする
-//#define PCC4
+#define PCC4
 
 geometry_msgs__msg__Twist g_msg;
 
@@ -36,7 +36,6 @@ rclc_executor_t g_executor;
 rcl_allocator_t g_allocator;
 rclc_support_t g_support;
 rcl_node_t g_node;
-
 
 
 #define MIN_SPEED 30
@@ -131,7 +130,7 @@ void IRAM_ATTR isrL(void)
 void subscriptionCallback(const void * msgin)
 {
   const geometry_msgs__msg__Twist * g_msg = (const geometry_msgs__msg__Twist *)msgin;
-
+  //linearは[m/s]の単位で入力されるのでPi:Coのシステムに合わせて[mm/s]にする
   g_run.speed = g_msg->linear.x * 1000.0;
   g_run.omega = g_msg->angular.z;
 }
@@ -146,7 +145,6 @@ void setup()
 
   //motor disable
   pinMode(MOTOR_EN, OUTPUT);
-
 
 #ifdef PCC4 
   digitalWrite(MOTOR_EN, HIGH);
@@ -163,11 +161,9 @@ void setup()
   digitalWrite(PWM_R, LOW);
   digitalWrite(PWM_L, LOW);
 #endif
-  Serial.begin(115200);
 
   digitalWrite(LED1, HIGH);
-  set_microros_wifi_transports("JCOM_HOSI", "890927221266", "192.168.40.250", 8888);
-//  set_microros_wifi_transports("使用するWiFiのAP名", "Wi-Fiのパスワード", "PCのIPアドレス", 8888);
+  set_microros_wifi_transports("使用するWiFiのAP名", "Wi-Fiのパスワード", "PCのIPアドレス", 8888);
   digitalWrite(LED2, HIGH);
 
   delay(2000);
@@ -217,5 +213,4 @@ void loop()
 {
   delay(10);
   RCCHECK(rclc_executor_spin_some(&g_executor, RCL_MS_TO_NS(100)));
-  Serial.printf("%f %f\n\r",g_run.speed_l,g_run.speed_r);
 }
