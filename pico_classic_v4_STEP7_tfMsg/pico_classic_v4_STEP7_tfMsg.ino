@@ -81,25 +81,8 @@ hw_timer_t * g_timer3 = NULL;
 
 portMUX_TYPE g_timer_mux = portMUX_INITIALIZER_UNLOCKED;
 
-/*
-unsigned short g_step_hz_r = MIN_HZ;
-unsigned short g_step_hz_l = MIN_HZ;
-
-volatile double g_max_speed = MIN_SPEED;
-volatile double g_min_speed = MIN_SPEED;
-volatile double g_accel = 0.0;
-volatile double g_speed = 0.0;
-*/
-
-double g_max_omega;
-double g_min_omega;
-double g_acc_omega = 0.0;
-double g_omega = 0;
 double g_position_r, g_position_l;
-
 double g_odom_x, g_odom_y, g_odom_theta;
-
-volatile bool g_motor_move = 0;
 
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){errorLoop();}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){}}
@@ -164,7 +147,6 @@ void IRAM_ATTR isrL(void)
       asm("nop \n");
     };
     digitalWrite(PWM_L, LOW);
-    g_step_l++;
   }
   portEXIT_CRITICAL_ISR(&g_timer_mux);  //割り込み許可
 }

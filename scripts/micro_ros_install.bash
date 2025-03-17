@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 cd ~
 mkdir -p ~/uros_seminar_ws/src
 cd ~/uros_seminar_ws/src
@@ -8,7 +8,8 @@ source /opt/ros/humble/setup.bash
 cd ~/uros_seminar_ws
 rosdep install --from-paths src --ignore-src -y
 colcon build
+source ./install/local_setup.bash
 ros2 run micro_ros_setup create_agent_ws.sh
 colcon build
-source install/local_setup.bash
+source ./install/local_setup.bash
 
