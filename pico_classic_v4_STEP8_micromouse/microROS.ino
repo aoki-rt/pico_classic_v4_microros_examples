@@ -1,4 +1,4 @@
-// Copyright 2023 RT Corporation
+// Copyright 2025 RT Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,12 +40,10 @@ rcl_node_t g_node;
     }                              \
   }
 
-extern unsigned char g_second_run[256];
-
-void marker_set(int start2_x, int start2_y, t_direction_glob dir)
+void marker_set(int start2_x, int start2_y, t_global_direction dir)
 {
   int i = 0;
-  t_direction_glob temp_dir = dir;
+  t_global_direction temp_dir = dir;
   int x, y;
 
   x = start2_x, y = start2_y;
@@ -67,11 +65,11 @@ void marker_set(int start2_x, int start2_y, t_direction_glob dir)
 
   while (1) {
     //直線
-    if (g_second_run[i] != 0) {
-      if (g_second_run[i] == 127) {
+    if (g_fast.second_run_pattern[i] != 0) {
+      if (g_fast.second_run_pattern[i] == 127) {
         return;
       }
-      for (int j = 0; j < g_second_run[i]; j++) {
+      for (int j = 0; j < g_fast.second_run_pattern[i]; j++) {
         switch (temp_dir) {
           case north:
             fast_path_add_publish(y, x, north);
@@ -95,8 +93,8 @@ void marker_set(int start2_x, int start2_y, t_direction_glob dir)
     }
     i++;
     //コーナー
-    if (g_second_run[i] == 127) break;
-    switch (g_second_run[i]) {
+    if (g_fast.second_run_pattern[i] == 127) break;
+    switch (g_fast.second_run_pattern[i]) {
       case R90:
         if (temp_dir == north)
           temp_dir = east;
@@ -208,7 +206,7 @@ void pole_publish(int x, int y)
   RCSOFTCHECK(rcl_publish(&g_publisher_marker, &g_marker_msg, NULL));
 }
 
-void wall_publish(int x, int y, t_direction_glob dir)
+void wall_publish(int x, int y, t_global_direction dir)
 {  //x,yの方向はrvizの座標、t_direction_globはマイクマウスのマップの方角
   uint32_t current = micros();
   g_marker_msg.header.stamp.sec = current / 1000000;
@@ -263,7 +261,7 @@ void wall_publish(int x, int y, t_direction_glob dir)
   RCSOFTCHECK(rcl_publish(&g_publisher_marker, &g_marker_msg, NULL));
 }
 
-void vwall_publish(int x, int y, t_direction_glob dir)
+void vwall_publish(int x, int y, t_global_direction dir)
 {  //x,yの方向はrvizの座標、t_direction_globはマイクマウスのマップの方角
   uint32_t current = micros();
   g_marker_msg.header.stamp.sec = current / 1000000;
@@ -318,7 +316,7 @@ void vwall_publish(int x, int y, t_direction_glob dir)
   RCSOFTCHECK(rcl_publish(&g_publisher_marker, &g_marker_msg, NULL));
 }
 
-void wall_del_publish(int x, int y, t_direction_glob dir)
+void wall_del_publish(int x, int y, t_global_direction dir)
 {
   uint32_t current = micros();
   g_marker_msg.header.stamp.sec = current / 1000000;
@@ -358,7 +356,7 @@ void fast_path_del_publish(void)
   RCSOFTCHECK(rcl_publish(&g_publisher_marker, &g_marker_msg, NULL));
 }
 
-void fast_path_add_publish(int x, int y, t_direction_glob dir)
+void fast_path_add_publish(int x, int y, t_global_direction dir)
 {
   uint32_t current = micros();
   g_marker_msg.header.stamp.sec = current / 1000000;
@@ -432,18 +430,18 @@ void publisherTask(void * pvParameters)
     g_jstate.position.data[0] = g_position_l;
     g_jstate.position.data[1] = g_position_r;
 
-    g_sensor_msg.forward_r = g_sen_fr.value;
-    g_sensor_msg.forward_l = g_sen_fl.value;
-    g_sensor_msg.right = g_sen_r.value;
-    g_sensor_msg.left = g_sen_l.value;
-    g_bat_msg.data = g_battery_value;
+    g_sensor_msg.forward_r = g_sensor.sen_fr.value;
+    g_sensor_msg.forward_l = g_sensor.sen_fl.value;
+    g_sensor_msg.right = g_sensor.sen_r.value;
+    g_sensor_msg.left = g_sensor.sen_l.value;
+    g_bat_msg.data = g_sensor.battery_value;
 
     RCSOFTCHECK(rcl_publish(&g_publisher_tf, g_tf_message, NULL));
     RCSOFTCHECK(rcl_publish(&g_publisher_joint, &g_jstate, NULL));
     RCSOFTCHECK(rcl_publish(&g_publisher_sensor, &g_sensor_msg, NULL));
     RCSOFTCHECK(rcl_publish(&g_publisher_battery, &g_bat_msg, NULL));
 
-    switch (g_map_control.getWallData(g_publish_x, g_publish_y, north)) {
+    switch (g_map.wallDataGet(g_publish_x, g_publish_y, north)) {
       case WALL:
         wall_publish(g_publish_y, g_publish_x, north);
         break;
@@ -452,7 +450,7 @@ void publisherTask(void * pvParameters)
         break;
     }
 
-    switch (g_map_control.getWallData(g_publish_x, g_publish_y, east)) {
+    switch (g_map.wallDataGet(g_publish_x, g_publish_y, east)) {
       case WALL:
         wall_publish(g_publish_y, g_publish_x, east);
         break;
@@ -461,7 +459,7 @@ void publisherTask(void * pvParameters)
         break;
     }
 
-    switch (g_map_control.getWallData(g_publish_x, g_publish_y, south)) {
+    switch (g_map.wallDataGet(g_publish_x, g_publish_y, south)) {
       case WALL:
         wall_publish(g_publish_y, g_publish_x, south);
         break;
@@ -470,7 +468,7 @@ void publisherTask(void * pvParameters)
         break;
     }
 
-    switch (g_map_control.getWallData(g_publish_x, g_publish_y, west)) {
+    switch (g_map.wallDataGet(g_publish_x, g_publish_y, west)) {
       case WALL:
         wall_publish(g_publish_y, g_publish_x, west);
         break;
@@ -487,19 +485,19 @@ void publisherTask(void * pvParameters)
   }
 }
 
-void initMicroROS(void)
+void microROSInit(void)
 {
   char a = 0;
 
   set_microros_wifi_transports("使用するWiFiのAP名", "Wi-Fiのパスワード", "PCのIPアドレス", 8888);
 
-  setLED(1);
+  ledSet(1);
   delay(1000);
-  setLED(3);
+  ledSet(3);
   delay(1000);
-  setLED(7);
+  ledSet(7);
   delay(1000);
-  setLED(15);
+  ledSet(15);
   delay(1000);
 
   g_allocator = rcl_get_default_allocator();
@@ -580,8 +578,8 @@ void initMicroROS(void)
   g_marker_msg.color.g = 1.0f;
   g_marker_msg.color.b = 0.0f;
   g_marker_msg.color.a = 1.0f;
-  g_marker_msg.pose.position.x = g_map_control.getGoalY() * 0.180;
-  g_marker_msg.pose.position.y = -1 * g_map_control.getGoalX() * 0.180;
+  g_marker_msg.pose.position.x = g_map.goal_my * 0.180;
+  g_marker_msg.pose.position.y = -1 * g_map.goal_mx * 0.180;
   g_marker_msg.pose.position.z = 0.050;
   g_marker_msg.pose.orientation.y = 1.0;  //矢印を下にするためy軸を回転
   RCSOFTCHECK(rcl_publish(&g_publisher_marker, &g_marker_msg, NULL));
@@ -590,7 +588,7 @@ void initMicroROS(void)
   g_marker_msg.pose.orientation.y = 0.0;  //向きを戻す
 
   for (int i = 0; i < 17; i++) {  //rviz x axis
-    setLED(a++);
+    ledSet(a++);
     for (int j = 0; j < 17; j++) {  //rviz y axis
       pole_publish(i, j);
       delay(15);
@@ -638,11 +636,7 @@ void initMicroROS(void)
   delay(20);
 
   xTaskCreateUniversal(
-    //  xTaskCreatePinnedToCore(
     publisherTask, "publisherTask", 4096,
-    //    8192,  //4096,
     NULL, 1, NULL,
-    //    PRO_CPU_NUM
-    //    APP_CPU_NUM
     CONFIG_ARDUINO_RUNNING_CORE);
 }
