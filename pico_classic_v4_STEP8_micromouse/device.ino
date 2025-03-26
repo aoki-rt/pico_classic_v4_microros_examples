@@ -17,8 +17,6 @@ hw_timer_t * g_timer1 = NULL;
 hw_timer_t * g_timer2 = NULL;
 hw_timer_t * g_timer3 = NULL;
 
-volatile double g_motor_signed_r, g_motor_signed_l;
-
 volatile bool g_motor_move = 0;
 volatile unsigned int g_step_r, g_step_l;
 unsigned short g_step_hz_r = 30;
@@ -33,9 +31,6 @@ void stepClearL(void) { g_step_l = 0; }
 unsigned int stepGetR(void) { return g_step_r; }
 unsigned int stepGetL(void) { return g_step_l; }
 void motorMoveSet(bool data) { g_motor_move = data; }
-
-double motorSignedR(void) { return g_motor_signed_r; }
-double motorSignedL(void) { return g_motor_signed_l; }
 
 void IRAM_ATTR onTimer0(void)
 {
@@ -220,18 +215,13 @@ void motorDirectionSet(t_CW_CCW left_CW, t_CW_CCW right_CW)
 {  //左右のモータの回転方向を指示する
   if (right_CW == MOT_FORWARD) {
     digitalWrite(CW_R, LOW);
-    g_motor_signed_r = 1.0;
   } else {
-    digitalWrite(CW_R, HIGH);
-    g_motor_signed_r = -1.0;
-  }
+    digitalWrite(CW_R, HIGH);  }
 
   if (left_CW == MOT_FORWARD) {
     digitalWrite(CW_L, LOW);
-    g_motor_signed_l = 1.0;
   } else {
     digitalWrite(CW_L, HIGH);
-    g_motor_signed_l = -1.0;
   }
 }
 #endif

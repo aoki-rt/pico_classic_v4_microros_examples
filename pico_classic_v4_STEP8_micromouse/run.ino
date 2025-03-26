@@ -67,9 +67,9 @@ void RUN::interrupt(void)
 
   //odom
   //xは方向
-  double speed2 = (speed_target_r * motorSignedR() + speed_target_l * motorSignedL()) / 2.0;
+  double speed2 = (speed_target_r * motor_signed_r + speed_target_l * motor_signed_l) / 2.0;
   double omega =
-    (speed_target_r * motorSignedR() - speed_target_l * motorSignedL()) / tread_width * 1.00;
+    (speed_target_r * motor_signed_r - speed_target_l * motor_signed_l) / tread_width * 1.00;
   g_odom_x += speed2 * 0.001 * cos(g_odom_theta) * 0.001;
   g_odom_y += speed2 * 0.001 * sin(g_odom_theta) * 0.001;
   g_odom_theta += omega * 0.001;
@@ -110,12 +110,23 @@ void RUN::interrupt(void)
     temp_cnt = 0;
   }
 
-  g_position_r += speed_target_r * 0.001 * motorSignedR() / (tire_diameter * PI) * 2 * PI;
-  g_position_l -= speed_target_l * 0.001 * motorSignedL() / (tire_diameter * PI) * 2 * PI;
+  g_position_r += speed_target_r * 0.001 * motor_signed_r / (tire_diameter * PI) * 2 * PI;
+  g_position_l -= speed_target_l * 0.001 * motor_signed_l / (tire_diameter * PI) * 2 * PI;
 }
 
 void RUN::dirSet(t_CW_CCW dir_left, t_CW_CCW dir_right)
 {
+  if (dir_right == MOT_FORWARD) {
+    motor_signed_r = 1.0;
+  } else {
+    motor_signed_r = -1.0;
+  }
+  if (dir_left == MOT_FORWARD) {
+    motor_signed_l = 1.0;
+  } else {
+    motor_signed_l = -1.0;
+  }
+
 #ifdef PCC4
   g_tmc5240.write(TMC5240_RAMPMODE, dir_left, dir_right);
 #else
@@ -335,7 +346,7 @@ void RUN::rotate(t_local_direction dir, int times)
   upper_speed_limit = search_speed;
   speed = lower_speed_limit = MIN_SPEED;
   con_wall.enable = false;
-  obj_step = (int)(tread_width * PI / 4.0 * (float)times * 2.0 / pulse);  
+  obj_step = (int)(tread_width * PI / 4.0 * (float)times * 2.0 / pulse);
   switch (dir) {
     case right:
       dirSet(MOT_FORWARD, MOT_BACK);
@@ -346,18 +357,20 @@ void RUN::rotate(t_local_direction dir, int times)
       motorMoveSet(1);
       break;
     default:
-      dirSet(MOT_FORWARD, MOT_FORWARD);    
+      dirSet(MOT_FORWARD, MOT_FORWARD);
       motorMoveSet(0);
       break;
   }
-    speedSet(MIN_SPEED, MIN_SPEED);
+  speedSet(MIN_SPEED, MIN_SPEED);
   counterClear();
   controlInterruptStart();
 
   while (1) {
     stepGet();
     speedSet(speed_target_l, speed_target_r);
-    if ((int)((tread_width * PI / 4.0 * times) - step_lr_len) < (int)(((speed * speed) - (MIN_SPEED * MIN_SPEED)) / (2.0 * 1000.0 * accel))) {
+    if (
+      (int)((tread_width * PI / 4.0 * times) - step_lr_len) <
+      (int)(((speed * speed) - (MIN_SPEED * MIN_SPEED)) / (2.0 * 1000.0 * accel))) {
       break;
     }
   }
@@ -372,5 +385,4 @@ void RUN::rotate(t_local_direction dir, int times)
     }
   }
   stop();
-
 }

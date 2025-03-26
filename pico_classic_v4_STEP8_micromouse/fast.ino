@@ -77,7 +77,7 @@ void FAST::run(short gx, short gy)
       break;
   }
 
-  g_fast_task = true;  //rvizに最短経路のマーカーを表示
+  g_fast_task = true;  //RVizに最短経路のマーカーを表示
   delay(10);
 
   g_run.accelerate(HALF_SECTION, g_run.search_speed);
