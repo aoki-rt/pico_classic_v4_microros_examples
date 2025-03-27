@@ -39,23 +39,21 @@ void SENSOR::interrupt(void)
       } else {
         sen_r.is_wall = false;
       }
-      if ((sen_l.ref / 4 + sen_l.p_value / 2 + sen_l.p2_value / 4) > sen_l.th_wall) {
+      if ((sen_l.value / 4 + sen_l.p_value / 2 + sen_l.p2_value / 4) > sen_l.th_wall) {
         sen_l.is_wall = true;
       } else {
         sen_l.is_wall = false;
       }
 
       if (sen_r.value > sen_r.th_control) {
-        sen_r.error =
-          sen_r.value / 4 + sen_r.p_value / 2 + sen_r.p2_value / 4 - sen_r.ref;
+        sen_r.error = sen_r.value / 4 + sen_r.p_value / 2 + sen_r.p2_value / 4 - sen_r.ref;
         sen_r.is_control = true;
       } else {
         sen_r.error = 0;
         sen_r.is_control = false;
       }
       if (sen_l.value > sen_l.th_control) {
-        sen_l.error =
-          sen_l.value - (sen_l.ref / 4 + sen_l.p_value / 2 + sen_l.p2_value / 4);
+        sen_l.error = sen_l.value - (sen_l.ref / 4 + sen_l.p_value / 2 + sen_l.p2_value / 4);
         sen_l.is_control = true;
       } else {
         sen_l.error = 0;
@@ -79,12 +77,12 @@ void SENSOR::interrupt(void)
       sen_fl.p_value = sen_fl.value;
       sen_fr.value = sensorGetFR();
       sen_fl.value = sensorGetFL();
-      if ((sen_fr.value / 4 + sen_fr.p_value / 2 + sen_fr.p2_value / 2) > sen_fr.th_wall) {
+      if ((sen_fr.value / 4 + sen_fr.p_value / 2 + sen_fr.p2_value / 4) > sen_fr.th_wall) {
         sen_fr.is_wall = true;
       } else {
         sen_fr.is_wall = false;
       }
-      if ((sen_fl.value / 4 + sen_fl.p_value / 2 + sen_fl.p2_value / 2) > sen_fl.th_wall) {
+      if ((sen_fl.value / 4 + sen_fl.p_value / 2 + sen_fl.p2_value / 4) > sen_fl.th_wall) {
         sen_fl.is_wall = true;
       } else {
         sen_fl.is_wall = false;

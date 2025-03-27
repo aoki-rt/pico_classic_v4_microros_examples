@@ -62,8 +62,12 @@ void RUN::interrupt(void)
     speed_target_l = speed;
   }
 
-  if (speed_target_r < MIN_SPEED) speed_target_r = MIN_SPEED;
-  if (speed_target_l < MIN_SPEED) speed_target_l = MIN_SPEED;
+  if (motorMoveGet()) {
+    if (speed_target_r < MIN_SPEED) speed_target_r = MIN_SPEED;
+    if (speed_target_l < MIN_SPEED) speed_target_l = MIN_SPEED;
+  } else {
+    speed_target_r = speed_target_l = 0;
+  }
 
   //odom
   //xは方向
@@ -178,10 +182,9 @@ void RUN::stepGet(void)
 
 void RUN::stop(void)
 {
+  motorMoveSet(0);
 #ifdef PCC4
   g_tmc5240.write(TMC5240_VMAX, 0, 0);
-#else
-  motorMoveSet(0);
 #endif
   delay(300);
 }

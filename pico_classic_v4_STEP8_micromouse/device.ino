@@ -31,6 +31,8 @@ void stepClearL(void) { g_step_l = 0; }
 unsigned int stepGetR(void) { return g_step_r; }
 unsigned int stepGetL(void) { return g_step_l; }
 void motorMoveSet(bool data) { g_motor_move = data; }
+bool motorMoveGet(void) {  return g_motor_move;}
+
 
 void IRAM_ATTR onTimer0(void)
 {

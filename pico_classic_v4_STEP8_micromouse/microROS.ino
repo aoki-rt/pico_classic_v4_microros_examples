@@ -635,8 +635,8 @@ void microROSInit(void)
   fast_path_del_publish();
   delay(20);
 
+  g_odom_x = g_odom_y = g_odom_theta = g_position_r = g_position_l = 0.0;
+
   xTaskCreateUniversal(
-    publisherTask, "publisherTask", 4096,
-    NULL, 1, NULL,
-    CONFIG_ARDUINO_RUNNING_CORE);
+    publisherTask, "publisherTask", 4096, NULL, 1, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 }

@@ -16,7 +16,7 @@
 #define USE_MICRO_ROS
 
 //Pi:co Classic3で使用する時は、#define PCC4をコメントアウトする
-//#define PCC4
+#define PCC4
 
 //マイクロマウスで使用するヘッダ
 #include <AsyncTCP.h>
@@ -56,7 +56,7 @@
 
 
 //micro-ROSで使用する変数
-volatile double g_position_r, g_position_l;
+volatile double g_position_r,g_position_l;
 volatile double g_odom_x, g_odom_y, g_odom_theta;
 short g_publish_x, g_publish_y;
 volatile bool g_theta_adj;
