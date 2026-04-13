@@ -7,11 +7,11 @@ Pi:Co Classic4 micro-ROS Arduinoサンプルスケッチ集です。
 
 ## 動作環境
 
-- arduino-esp32 : v3.3.8 
+- arduino-esp32 : v3.3.8
+- micro_ros_arduino : v2.0.8-humble
 
 ## サンプルスケッチについて
 
-- [オプションキット No.1 [ESP32-S3マイコンボード]](https://www.rt-shop.jp/index.php?main_page=product_info&products_id=4131)を搭載したPi:Co Classic3で動作確認するには、サンプルプログラムの#define PCC4をコメントアウトしてください。
 - STEP1 LEDをSUBを使って制御します
 - STEP2 SWITCHの入力情報をPUBを使って確認します。
 - STEP3 BUZZERをサービスを使って鳴らします。
@@ -21,10 +21,14 @@ Pi:Co Classic4 micro-ROS Arduinoサンプルスケッチ集です。
 - STEP7 RVizで表示するメッセージをPUBします。
 - STEP8 マイクロマウスとして動作し、移動した壁の情報をRVizにリアルタイムで表示します。
 
+- [オプションキット No.1 [ESP32-S3マイコンボード]](https://www.rt-shop.jp/index.php?main_page=product_info&products_id=4131)を搭載したPi:Co Classic3で動作確認するには、サンプルプログラムの#define PCC4をコメントアウトしてください。
+- scriptsフォルダには、実行するときのコマンドをbashで記載しています。
+
+
 ## 関連ソフトウェア
 
 - [pico_msgs](https://github.com/rt-net/pico_msgs) : PCとPi:Co Classic間でやりとりするROSメッセージを定義したパッケージです
-- [pico_ros](https://github.com/rt-net/pico_ros) : Pi:Co Classicを便利に動かすためのPC向けROSパッケー
+- [pico_ros](https://github.com/rt-net/pico_ros) : Pi:Co Classicを便利に動かすためのPC向けROSパッケージです
 
 
 ## スケッチファイルの自動整形について
