@@ -29,8 +29,8 @@ jobs:
             - name: esp32:esp32
               source-url: https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
               version: 3.3.8
-          libraries: |
-            - source-url: https://github.com/micro-ROS/micro_ros_arduino/archive/refs/tags/v2.0.8-humble.zip
+          libraries: |  # RTがカスタマイズしたmicro_ros_arduinoライブラリを使用する
+            - source-url: https://github.com/rt-net/micro_ros_arduino/archive/refs/tags/esp32s3-230417.zip
           sketch-paths: |
             - pico_classic_v4_STEP1_LED
             - pico_classic_v4_STEP2_SWITCH
