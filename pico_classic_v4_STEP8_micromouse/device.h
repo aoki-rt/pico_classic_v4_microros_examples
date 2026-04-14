@@ -54,7 +54,6 @@
 #define SPI_CS_J 46  //ジャイロ
 #define SPI_MISO 41
 
-
 #else
 #define LED0 1
 #define LED1 2
@@ -80,7 +79,6 @@
 #define AD2 5
 #define AD1 4
 #define AD0 8
-
 
 #define MOTOR_EN 9
 #define CW_R 14

@@ -31,8 +31,7 @@ void stepClearL(void) { g_step_l = 0; }
 unsigned int stepGetR(void) { return g_step_r; }
 unsigned int stepGetL(void) { return g_step_l; }
 void motorMoveSet(bool data) { g_motor_move = data; }
-bool motorMoveGet(void) {  return g_motor_move;}
-
+bool motorMoveGet(void) { return g_motor_move; }
 
 void IRAM_ATTR onTimer0(void)
 {
@@ -208,7 +207,7 @@ void motorDisable(void)
 #ifdef PCC4
   digitalWrite(MOTOR_EN, HIGH);  //Power OFF
 #else
-  digitalWrite(MOTOR_EN, LOW);   //Power OFF
+  digitalWrite(MOTOR_EN, LOW);  //Power OFF
 #endif
 }
 
@@ -218,7 +217,8 @@ void motorDirectionSet(t_CW_CCW left_CW, t_CW_CCW right_CW)
   if (right_CW == MOT_FORWARD) {
     digitalWrite(CW_R, LOW);
   } else {
-    digitalWrite(CW_R, HIGH);  }
+    digitalWrite(CW_R, HIGH);
+  }
 
   if (left_CW == MOT_FORWARD) {
     digitalWrite(CW_L, LOW);

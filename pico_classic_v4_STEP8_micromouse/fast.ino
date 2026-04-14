@@ -20,7 +20,7 @@ void FAST::run(short gx, short gy)
 {
   t_global_direction glob_nextdir;
   int straight_count = 0;
-  int i=0;
+  int i = 0;
 
   //RVizに表示するマーカーの座標の初期化
   g_start_x = g_map.mypos.x;
