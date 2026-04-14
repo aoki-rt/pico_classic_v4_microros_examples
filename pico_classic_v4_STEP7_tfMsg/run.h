@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #ifndef SRC_RUN_H_
 #define SRC_RUN_H_
 
@@ -21,9 +20,9 @@ typedef enum {
   MOT_BACK = 2
 } t_CW_CCW;
 
-class RUN {
+class RUN
+{
 private:
-
 public:
   volatile double speed;
   volatile double speed_r, speed_l;
@@ -37,9 +36,7 @@ public:
   void dirSet(t_CW_CCW dir_left, t_CW_CCW dir_right);
   void stop(void);
   void speedSet(double l_speed, double r_speed);
-
 };
-
 
 extern RUN g_run;
 

@@ -19,14 +19,12 @@ RUN g_run;
 
 RUN::RUN()
 {
-  speed=0.0;
-  speed_r=0.0;
-  speed_l=0.0;
+  speed = 0.0;
+  speed_r = 0.0;
+  speed_l = 0.0;
   motor_move = 0.0;
   omega = 0.0;
 }
-
-
 
 void RUN::dirSet(t_CW_CCW dir_left, t_CW_CCW dir_right)
 {
@@ -46,16 +44,19 @@ void RUN::dirSet(t_CW_CCW dir_left, t_CW_CCW dir_right)
 #endif
 }
 
-void RUN::speedSet(double l_speed, double r_speed) {
+void RUN::speedSet(double l_speed, double r_speed)
+{
   l_speed = fabs(l_speed);
-  if(l_speed < MIN_SPEED)l_speed=MIN_SPEED;
+  if (l_speed < MIN_SPEED) l_speed = MIN_SPEED;
   r_speed = fabs(r_speed);
-  if(r_speed < MIN_SPEED)r_speed=MIN_SPEED;
+  if (r_speed < MIN_SPEED) r_speed = MIN_SPEED;
 #ifdef PCC4
-  g_tmc5240.write(TMC5240_VMAX, (unsigned int)(l_speed / (PULSE * 0.787)), (unsigned int)(r_speed / (PULSE * 0.787)));
+  g_tmc5240.write(
+    TMC5240_VMAX, (unsigned int)(l_speed / (PULSE * 0.787)),
+    (unsigned int)(r_speed / (PULSE * 0.787)));
 #else
-  step_hz_r=(unsigned short)(r_speed/PULSE);
-  step_hz_l=(unsigned short)(l_speed/PULSE);
+  step_hz_r = (unsigned short)(r_speed / PULSE);
+  step_hz_l = (unsigned short)(l_speed / PULSE);
 #endif
 }
 

@@ -37,7 +37,6 @@ rcl_allocator_t g_allocator;
 rclc_support_t g_support;
 rcl_node_t g_node;
 
-
 #define MIN_SPEED 30
 #define TIRE_DIAMETER (48.00)
 #define TREAD_WIDTH (65.0)
@@ -51,7 +50,7 @@ rcl_node_t g_node;
 #define SPI_CLK 39
 #define SPI_MOSI 42
 #define SPI_MISO 41
-#define SPI_CS_L 40   //左モータ
+#define SPI_CS_L 40  //左モータ
 #define SPI_CS_R 3   //右モータ
 #define SPI_CS_J 46  //ジャイロ
 #define PULSE TMC5240_PULSE
@@ -74,8 +73,19 @@ hw_timer_t * g_timer3 = NULL;
 
 portMUX_TYPE g_timer_mux = portMUX_INITIALIZER_UNLOCKED;
 
-#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){errorLoop();}}
-#define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){}}
+#define RCCHECK(fn)                \
+  {                                \
+    rcl_ret_t temp_rc = fn;        \
+    if ((temp_rc != RCL_RET_OK)) { \
+      errorLoop();                 \
+    }                              \
+  }
+#define RCSOFTCHECK(fn)            \
+  {                                \
+    rcl_ret_t temp_rc = fn;        \
+    if ((temp_rc != RCL_RET_OK)) { \
+    }                              \
+  }
 
 void errorLoop()
 {
@@ -94,7 +104,7 @@ void IRAM_ATTR onTimer0(void)
   portEXIT_CRITICAL_ISR(&g_timer_mux);  //割り込み許可
 }
 
-#ifndef PCC4 
+#ifndef PCC4
 //Rモータの周期数割り込み
 void IRAM_ATTR isrR(void)
 {
@@ -146,7 +156,7 @@ void setup()
   //motor disable
   pinMode(MOTOR_EN, OUTPUT);
 
-#ifdef PCC4 
+#ifdef PCC4
   digitalWrite(MOTOR_EN, HIGH);
   g_tmc5240.init();
 #else
@@ -173,7 +183,7 @@ void setup()
   timerAlarm(g_timer0, 1000, true, 0);  //1000 * 1us = 1000us(1kHz)
   timerStart(g_timer0);
 
-#ifndef PCC4 
+#ifndef PCC4
   g_timer2 = timerBegin(2000000);  //2MHz(0.5us)
   timerAttachInterrupt(g_timer2, &isrR);
   timerAlarm(g_timer2, 13333, true, 0);  //13333 * 0.5us = 6666us(150Hz)
@@ -202,7 +212,7 @@ void setup()
   RCCHECK(rclc_executor_add_subscription(
     &g_executor, &g_subscriber, &g_msg, &subscriptionCallback, ON_NEW_DATA));
 
-#ifdef PCC4 
+#ifdef PCC4
   digitalWrite(MOTOR_EN, LOW);
 #else
   digitalWrite(MOTOR_EN, HIGH);

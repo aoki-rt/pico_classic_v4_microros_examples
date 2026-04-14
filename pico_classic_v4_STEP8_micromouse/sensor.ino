@@ -16,11 +16,9 @@
 
 SENSOR g_sensor;
 
-void sensorInterrupt(void) {
-  g_sensor.interrupt();
-}
+void sensorInterrupt(void) { g_sensor.interrupt(); }
 
-void SENSOR::interrupt(void) 
+void SENSOR::interrupt(void)
 {
   static char cnt = 0;
   static char bled_cnt = 0;

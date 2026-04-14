@@ -55,7 +55,7 @@ public:
   float tread_width;
   float pulse;
 
-  volatile double motor_signed_r, motor_signed_l;  
+  volatile double motor_signed_r, motor_signed_l;
 
   RUN();
   void interrupt(void);

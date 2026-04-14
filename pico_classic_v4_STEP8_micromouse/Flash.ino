@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-void flashInit(void) {
+void flashInit(void)
+{
   String cmd_tmp;
   String file_tmp;
   file_tmp = "/parameters.txt";
@@ -62,11 +63,11 @@ void flashInit(void) {
   sensorInterruptStart();
 }
 
-void flashBegin(void) {
-
+void flashBegin(void)
+{
   controlInterruptStop();
   sensorInterruptStop();
-  PWMInterruptStop();  
+  PWMInterruptStop();
   delay(100);
 
   Serial.println("begin SPIFFS");
@@ -106,7 +107,8 @@ void mapWrite(void)
   }
   for (int i = 0; i < 16; i++) {
     for (int j = 0; j < 16; j++) {
-      data_temp = g_map.wallDataGet(i, j, north) + (g_map.wallDataGet(i, j, east) << 2) + (g_map.wallDataGet(i, j, south) << 4) + (g_map.wallDataGet(i, j, west) << 6);
+      data_temp = g_map.wallDataGet(i, j, north) + (g_map.wallDataGet(i, j, east) << 2) +
+                  (g_map.wallDataGet(i, j, south) << 4) + (g_map.wallDataGet(i, j, west) << 6);
       if (file.write(data_temp)) {  //バイナリ書き込み
       } else {
         Serial.println("- write failed");
@@ -153,15 +155,16 @@ void mapCopy(void)
   PWMInterruptStart();
 }
 
-void paramWrite(void) {
+void paramWrite(void)
+{
   String cmd_tmp;
   String file_tmp;
-  char *temp_char;
+  char * temp_char;
 
   //タイマーによる割り込みは禁止にする必要がある。
   controlInterruptStop();
   sensorInterruptStop();
-    PWMInterruptStop();
+  PWMInterruptStop();
   delay(10);
 
   int temp;
@@ -203,21 +206,21 @@ void paramWrite(void) {
 
   controlInterruptStart();
   sensorInterruptStart();
-    PWMInterruptStart();
+  PWMInterruptStart();
 }
 
-
-void paramRead(void) {
+void paramRead(void)
+{
   String cmd_tmp;
   String file_tmp;
   int temp;
 
-  String cmds[2] = { "\0" };  // 分割された文字列を格納する配列
+  String cmds[2] = {"\0"};  // 分割された文字列を格納する配列
 
   //タイマーによる割り込みは禁止にする必要がある。
   controlInterruptStop();
   sensorInterruptStop();
-    PWMInterruptStop();
+  PWMInterruptStop();
 
   delay(10);
 
@@ -271,21 +274,22 @@ void paramRead(void) {
       flashInit();
       break;
     }
-#ifdef PCC4    
+#ifdef PCC4
     g_run.pulse = g_run.tire_diameter * PI / (200.0 * microstep);
 #else
     g_run.pulse = g_run.tire_diameter * PI / 400.0;
 #endif
-    cmds[0] = { "\0" };
-    cmds[1] = { "\0" };
+    cmds[0] = {"\0"};
+    cmds[1] = {"\0"};
   }
   file.close();
   controlInterruptStart();
   sensorInterruptStart();
-  PWMInterruptStart();  
+  PWMInterruptStart();
 }
 
-int split(String data, char delimiter, String *dst) {
+int split(String data, char delimiter, String * dst)
+{
   int index = 0;
   int arraySize = (sizeof(data) / sizeof((data)[0]));
   int datalength = data.length();
@@ -294,13 +298,14 @@ int split(String data, char delimiter, String *dst) {
     if (tmp == delimiter) {
       index++;
       if (index > (arraySize - 1)) return -1;
-    } else dst[index] += tmp;
+    } else
+      dst[index] += tmp;
   }
   return (index + 1);
 }
 
-
-void readFile(fs::FS &fs, String path) {
+void readFile(fs::FS & fs, String path)
+{
   Serial.printf("Reading file: ");
   Serial.println(path);
 
@@ -317,7 +322,8 @@ void readFile(fs::FS &fs, String path) {
   file.close();
 }
 
-void writeFile(fs::FS &fs, String path, String message) {
+void writeFile(fs::FS & fs, String path, String message)
+{
   Serial.printf("Writing file: ");
   Serial.println(path);
 
@@ -333,7 +339,8 @@ void writeFile(fs::FS &fs, String path, String message) {
   file.close();
 }
 
-void appendFile(fs::FS &fs, String path, String message) {
+void appendFile(fs::FS & fs, String path, String message)
+{
   Serial.printf("Appending to file: ");
   Serial.println(path);
 
@@ -348,4 +355,3 @@ void appendFile(fs::FS &fs, String path, String message) {
   }
   file.close();
 }
-
