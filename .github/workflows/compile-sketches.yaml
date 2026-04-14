@@ -34,11 +34,11 @@ jobs:
           sketch-paths: |
             - pico_classic_v4_STEP1_LED
             - pico_classic_v4_STEP2_SWITCH
-            - pico_classic_v4_STEP3_Buzzer
-            - pico_classic_v4_STEP4_Sensor
-            - pico_classic_v4_STEP5_Straight
-            - pico_classic_v4_STEP6_rotate
-            - pico_classic_v4_STEP7_P_control
+            - pico_classic_v4_STEP3_BUZZER
+            - pico_classic_v4_STEP4_LED_USB
+            - pico_classic_v4_STEP5_SensorMsg
+            - pico_classic_v4_STEP6_twistMsg
+            - pico_classic_v4_STEP7_tfMsg
             - pico_classic_v4_STEP8_micromouse
 
       # This step is needed to pass the size data to the report job 
